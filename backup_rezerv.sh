@@ -36,6 +36,16 @@ function send_to_log {
 	echo $(date +%Y%m%d%H%M)":"${STATUS_TO_LOG[$1]}":"$2":"$3 >> $FILE_BACKUP_LOG
 }
 
+#find error 1010000
+function error_1010000 {
+	if NEW_FILEMARK -ne "-1"
+	then
+		
+	else
+		
+}
+
+
 #tape recording
 function file_to_LTO {
 	#STRIMER_FILES_NUM=$(mt -f /dev/st0 status | awk '/File/ {if(sub(/,/,""))if(sub(/number=/,"")){print $2}}') #position on the tape
