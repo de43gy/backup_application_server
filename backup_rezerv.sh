@@ -40,9 +40,9 @@ function send_to_log {
 function error_1010000 {
 	if NEW_FILEMARK -ne "-1"
 	then
-		
+		FILEMARK=NEW_FILEMARK
 	else
-		
+		mt -f /dev/nst0 asf $FI
 }
 
 
@@ -139,7 +139,7 @@ then
 	;;
 	"(50000)" ) #Strimmer ONLINE, Tape unloaded
 		send_to_log "1" "file was not copied to LTO" $ERROR_CODE
-		change_status_file "COPY_TO_LTO" "1"
+		change_status_file "COPY_TO_LTO" "1" 
 	;;
 	"(45010000)" ) #Strimmer ONLINE, Tape is write-protected check cartridge and use tape cleaner
 		send_to_log "1" "file was not copied to LTO" $ERROR_CODE
