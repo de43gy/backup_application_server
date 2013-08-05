@@ -9,7 +9,6 @@
 PATH_TO_BACKUP="/backUp/mysql_bases/" #the path to the backup archives
 PATH_TO_LOGS="/var/log/backup_mysql/" #the path to the directory with logs
 NUMBER_OF_COPIES="10" #number of files to backup, stored on the server
-NEW_FILEMARK="0" #the current position of the tape
 
 #over variables, constants and generated during launch script
 FILE_BACKUP_STATUS="status_backup.inf" #file for information to Nagios
@@ -36,13 +35,16 @@ function send_to_log {
 	echo $(date +%Y%m%d%H%M)":"${STATUS_TO_LOG[$1]}":"$2":"$3 >> $FILE_BACKUP_LOG
 }
 
-#find error 1010000
+#correction error 1010000
 function error_1010000 {
-	if NEW_FILEMARK -ne "-1"
+	if FILEMARK -eq "0"
 	then
-		FILEMARK=NEW_FILEMARK
+		mt -f /dev/nst0 rewind
+		send_to_log "1" "tape rewound" $FILEMARK
 	else
-		mt -f /dev/nst0 asf $FI
+		mt -f /dev/nst0 asf $FILEMARK
+		send_to_log "1" "tape rewound to mark" $FILEMARK
+	fi
 }
 
 
@@ -51,16 +53,14 @@ function file_to_LTO {
 	#STRIMER_FILES_NUM=$(mt -f /dev/st0 status | awk '/File/ {if(sub(/,/,""))if(sub(/number=/,"")){print $2}}') #position on the tape
 	if tar -cvf /dev/nst0 $PATH_TO_BACKUP$1 #copy file to LTO
 	then
-		NEW_FILEMARK=$(mt -f /dev/nst0 status | sed -rn 's/^File number=([0-9]+).*/\1/p')
 		send_to_log "0" "tape recording OK" $1
-		send_to_log "0" "File number=" $FILEMARK
-		change_status_file "COPY_TO_LTO" "0"
-		change_status_file "FILEMARK" $FILEMARK
-	else
 		NEW_FILEMARK=$(mt -f /dev/nst0 status | sed -rn 's/^File number=([0-9]+).*/\1/p')
+		send_to_log "0" "File number=" $NEW_FILEMARK
+		change_status_file "COPY_TO_LTO" "0"
+		change_status_file "FILEMARK" $NEW_FILEMARK
+	else
 		send_to_log "1" "tape recording ERROR" $1
 		change_status_file "COPY_TO_LTO" "1"
-		change_status_file "FILEMARK" $FILEMARK
 	fi
 }
 
@@ -154,6 +154,9 @@ then
 	;;
 	"(1010000)" ) #???
 		send_to_log "1" " " $ERROR_CODE
+		error_1010000
+		file_to_LTO ${FILELIST[0]}
+	;;
 		
 	* ) #Uncnow ERROR
 		send_to_log "1" "file was not copied to LTO" "Uncnow ERROR"
