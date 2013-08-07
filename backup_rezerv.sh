@@ -1,5 +1,5 @@
 #!/bin/bash
-#backup_mysql.sh v3.0 - Database backup files copied to the application and backup server
+#backup_mysql.sh v4.1 - Database backup files copied to the application and backup server
 
 #==========
 #VARIABLES
@@ -40,11 +40,18 @@ function error_1010000 {
 	if FILEMARK -eq "0"
 	then
 		mt -f /dev/nst0 rewind
-		send_to_log "1" "tape rewound" $FILEMARK
+		send_to_log "1" "tape rewind" $FILEMARK
 	else
 		mt -f /dev/nst0 asf $FILEMARK
 		send_to_log "1" "tape rewound to mark" $FILEMARK
 	fi
+}
+
+#the tape eject
+function streamer_eject {
+	mt -f /dev/nst0 eject
+	send_to_log "1" "tape eject" " "
+	file_to_LTO ${FILELIST[0]}
 }
 
 
@@ -59,7 +66,7 @@ function file_to_LTO {
 		change_status_file "COPY_TO_LTO" "0"
 		change_status_file "FILEMARK" $NEW_FILEMARK
 	else
-		send_to_log "1" "tape recording ERROR" $1
+		send_to_log "1" "tape recording ERROR" $1 
 		change_status_file "COPY_TO_LTO" "1"
 	fi
 }
@@ -152,12 +159,15 @@ then
 		send_to_log "1" "file was not copied to LTO" $ERROR_CODE
 		change_status_file "COPY_TO_LTO" "1"
 	;;
-	"(1010000)" ) #???
-		send_to_log "1" " " $ERROR_CODE
+	"(1010000)" ) #Strimmer ONLINE, the reason is not clear. probably losing end of the recording. helps a return to the previous record
+		send_to_log "1" "file was not copied to LTO" $ERROR_CODE
 		error_1010000
 		file_to_LTO ${FILELIST[0]}
 	;;
-		
+	"(21010000)" ) #Strimmer ONLINE, the reason is not clear. i think the tape is out of space. take out the cartridge. send message to Nagios 
+		send_to_log "2" "file was not copied to LTO" $ERROR_CODE
+		streamer_eject
+	;;	
 	* ) #Uncnow ERROR
 		send_to_log "1" "file was not copied to LTO" "Uncnow ERROR"
 		change_status_file "COPY_TO_LTO" "1"
