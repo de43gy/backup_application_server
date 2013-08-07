@@ -11,6 +11,7 @@ PATH_TO_LOGS="/var/log/backup_mysql/" #the path to the directory with logs
 NUMBER_OF_COPIES="10" #number of files to backup, stored on the server
 
 #over variables, constants and generated during launch script
+STREAMER_STATUS_LOG="streamer_status.log" #file for information of streamer codes
 FILE_BACKUP_STATUS="status_backup.inf" #file for information to Nagios
 FILE_BACKUP_LOG=$PATH_TO_LOGS$(date +%Y%m)$HOSTNAME.log #name for the backup file 
 PATH_FILE_BACKUP_STATUS=$PATH_TO_LOGS$FILE_BACKUP_STATUS #path to the file with the information for Nagios
@@ -32,6 +33,12 @@ function change_status_file {
 #send message to log: $1 0=INFO/1=WARNING/2=ERROR, $2 description, $3 result of the operation
 function send_to_log {
 	STATUS_TO_LOG=(INFO WARNING ERROR)
+	echo $(date +%Y%m%d%H%M)":"${STATUS_TO_LOG[$1]}":"$2":"$3 >> $FILE_BACKUP_LOG
+}
+
+#send status streamer to log (only streamer status)
+function streamer_status_log {
+	STATUS_TO_LOG=(INFO STATUS)
 	echo $(date +%Y%m%d%H%M)":"${STATUS_TO_LOG[$1]}":"$2":"$3 >> $FILE_BACKUP_LOG
 }
 
