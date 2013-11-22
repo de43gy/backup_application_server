@@ -148,7 +148,7 @@ send_to_log "0" "directory size of backup" $(du -hs $PATH_TO_BACKUP)
 if ERROR_CODE=$(mt -f /dev/nst0 status | egrep -o '\([0-9]{1,15}\)')
 then
 	case $ERROR_CODE in		
-	"(41010000)" ) #Strimmer ONLINE, Tape is positioned at the beginning of the first filemark - WARNING
+	"(41010000)" ) #Strimmer ONLINE, Tape is positioned at the beginning of the first file-mark - WARNING
 		file_to_LTO ${FILELIST[0]}
 	;;
 	"(50000)" ) #Strimmer ONLINE, Tape unloaded
@@ -159,10 +159,10 @@ then
 		send_to_log "1" "file was not copied to LTO" $ERROR_CODE
 		change_status_file "COPY_TO_LTO" "1"
 	;;
-	"(81010000)" ) #Strimmer ONLINE, Tape is positioned at the end of last filemark
+	"(81010000)" ) #Strimmer ONLINE, Tape is positioned at the end of last file-mark 
 		file_to_LTO ${FILELIST[0]}
 	;;
-	"(89010000)" ) #Strimmer ONLINE, Tape is positioned at the end of last filemark, at the end of data
+	"(89010000)" ) #Strimmer ONLINE, Tape is positioned at the end of last file-mark, at the end of data
 		send_to_log "1" "file was not copied to LTO" $ERROR_CODE
 		change_status_file "COPY_TO_LTO" "1"
 	;;
@@ -175,13 +175,13 @@ then
 		send_to_log "2" "file was not copied to LTO" $ERROR_CODE
 		streamer_eject
 	;;	
-	* ) #Uncnow ERROR
-		send_to_log "1" "file was not copied to LTO" "Uncnow ERROR"
+	* ) #Unknown ERROR
+		send_to_log "1" "file was not copied to LTO" "Unknown ERROR"
 		change_status_file "COPY_TO_LTO" "1"
 	;;
 	esac
-else #Uncnow ERROR or LTO offline
-	send_to_log "2" "file was not copied to LTO" "LTO offline"
+else #Unknown ERROR or LTO off-line
+	send_to_log "2" "file was not copied to LTO" "LTO off-line"
 	change_status_file "COPY_TO_LTO" "1"
 fi
 
